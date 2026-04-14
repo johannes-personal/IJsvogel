@@ -1,7 +1,15 @@
 :root {
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  background: radial-gradient(circle at top left, #f7f6ef, #e8efe7 55%, #d6e8df);
-  color: #14281d;
+  --brand-orange: #ff8400;
+  --brand-orange-dark: #d96e00;
+  --brand-navy: #00418e;
+  --text-main: #3f3f3f;
+  --bg-page: #f6f6f6;
+  --bg-card: #ffffff;
+  --border: #e1e1e1;
+
+  font-family: 'Muli', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  background: var(--bg-page);
+  color: var(--text-main);
 }
 
 * {
@@ -18,10 +26,10 @@ body {
 }
 
 header {
-  background: #173f35;
-  color: #f6fff9;
+  background: var(--brand-orange);
+  color: #fff;
   padding: 1rem;
-  border-radius: 12px;
+  border-radius: 0;
 }
 
 header label {
@@ -42,9 +50,9 @@ header select {
 }
 
 .card {
-  background: #ffffffcc;
-  border: 1px solid #c8d6cf;
-  border-radius: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
   padding: 0.9rem;
   margin-top: 0.8rem;
 }
@@ -66,22 +74,24 @@ textarea,
 select {
   width: 100%;
   padding: 0.45rem;
-  border: 1px solid #95a9a0;
-  border-radius: 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
 }
 
 button {
   margin-top: 0.6rem;
   padding: 0.45rem 0.7rem;
   border: 0;
-  border-radius: 8px;
-  background: #1c6b4d;
-  color: white;
+  border-radius: 4px;
+  background: var(--brand-orange);
+  color: #fff;
   cursor: pointer;
+  font-family: inherit;
+  font-weight: 600;
 }
 
 button:hover {
-  background: #14533a;
+  background: var(--brand-orange-dark);
 }
 
 .table-wrap {
@@ -96,7 +106,7 @@ table {
 
 th,
 td {
-  border: 1px solid #d2ded7;
+  border: 1px solid var(--border);
   padding: 0.4rem;
   text-align: left;
   font-size: 0.9rem;
@@ -110,7 +120,9 @@ td.comment-cell {
 }
 
 th {
-  background: #eff5f1;
+  background: #f9f9f9;
+  color: var(--text-main);
+  font-weight: 700;
 }
 
 .actions {
@@ -175,8 +187,9 @@ th {
 .summary {
   margin-top: 0.8rem;
   padding: 0.6rem;
-  background: #eff8f4;
-  border-radius: 8px;
+  background: #fff4e6;
+  border-radius: 4px;
+  border-left: 3px solid var(--brand-orange);
 }
 
 @media (max-width: 900px) {
