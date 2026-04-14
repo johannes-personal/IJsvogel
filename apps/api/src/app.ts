@@ -1,9 +1,9 @@
 import cors from "cors";
 import express from "express";
-import { authRouter } from "./routes/auth";
-import { caseRouter } from "./routes/cases";
-import { adminRouter } from "./routes/admin";
-import { refreshSupabaseSession } from "./middleware/supabaseSession";
+import { authRouter } from "./routes/auth.js";
+import { caseRouter } from "./routes/cases.js";
+import { adminRouter } from "./routes/admin.js";
+import { refreshSupabaseSession } from "./middleware/supabaseSession.js";
 
 const app = express();
 

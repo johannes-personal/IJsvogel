@@ -1,4 +1,4 @@
-import { getNotificationSettings } from "./store";
+import { getNotificationSettings } from "./store.js";
 
 export const sendSubmissionNotification = async (caseId: string, submittedBy: "Anidis" | "NedCargo") => {
   const settings = await getNotificationSettings();

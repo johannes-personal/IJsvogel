@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import { getUserById } from "../services/store";
+import { getUserById } from "../services/store.js";
 
 export interface AuthedRequest extends Request {
   userId?: string;

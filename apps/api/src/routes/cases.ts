@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { requireAuth, type AuthedRequest } from "../middleware/auth";
+import { requireAuth, type AuthedRequest } from "../middleware/auth.js";
 import {
   appendAudit,
   createCase,
@@ -9,8 +9,8 @@ import {
   getUserById,
   listCases,
   updateCaseDecision
-} from "../services/store";
-import { sendStatusNotification, sendSubmissionNotification } from "../services/mailer";
+} from "../services/store.js";
+import { sendStatusNotification, sendSubmissionNotification } from "../services/mailer.js";
 
 export const caseRouter = Router();
 caseRouter.use(requireAuth);

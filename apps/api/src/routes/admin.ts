@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { requireAuth, requireSuperadmin, type AuthedRequest } from "../middleware/auth";
+import { requireAuth, requireSuperadmin, type AuthedRequest } from "../middleware/auth.js";
 import {
   appendAudit,
   createPasswordResetToken,
@@ -12,7 +12,7 @@ import {
   listUsers,
   updateNotificationSettings,
   upsertClientMap
-} from "../services/store";
+} from "../services/store.js";
 
 export const adminRouter = Router();
 adminRouter.use(requireAuth, requireSuperadmin);

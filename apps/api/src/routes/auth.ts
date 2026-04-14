@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { appendAudit, createPasswordResetToken, getUserByEmail, listDevUsers } from "../services/store";
+import { appendAudit, createPasswordResetToken, getUserByEmail, listDevUsers } from "../services/store.js";
 
 export const authRouter = Router();
 

@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import { Pool } from "pg";
-import type { CaseRecord, CaseStatus, NotificationSettings, Party, User, UserRole } from "../types";
+import type { CaseRecord, CaseStatus, NotificationSettings, Party, User, UserRole } from "../types.js";
 
 const now = new Date().toISOString();
 const earlier = (hoursAgo: number) => new Date(Date.now() - hoursAgo * 60 * 60 * 1000).toISOString();
