@@ -1,0 +1,16 @@
+{
+  "name": "ijsvogel-case-management",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w @ijsvogel/api && npm run build -w @ijsvogel/web",
+    "dev": "echo \"Run API and web separately with npm run dev -w @ijsvogel/api and npm run dev -w @ijsvogel/web\"",
+    "db:setup": "npm run db:setup -w @ijsvogel/api",
+    "lint": "echo \"Lint setup pending\"",
+    "test": "echo \"Test setup pending\""
+  }
+}
