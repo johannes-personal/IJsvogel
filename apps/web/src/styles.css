@@ -101,6 +101,13 @@ td {
   padding: 0.4rem;
   text-align: left;
   font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+td.comment-cell {
+  white-space: normal;
+  min-width: 140px;
+  max-width: 260px;
 }
 
 th {
@@ -108,9 +115,63 @@ th {
 }
 
 .actions {
-  display: grid;
-  gap: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
 }
+
+/* Graphic action buttons */
+.act-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0;
+  padding: 0.3rem 0.55rem;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: filter 0.15s;
+}
+
+.act-btn:hover {
+  filter: brightness(0.88);
+  background: unset;
+}
+
+.act-icon {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.act-approve {
+  background: #166534;
+  color: #fff;
+}
+
+.act-reject {
+  background: #b91c1c;
+  color: #fff;
+}
+
+.act-suggest {
+  background: #b45309;
+  color: #fff;
+}
+
+/* Status badge */
+.status-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.status-pending   { background: #fef9c3; color: #713f12; }
+.status-approved  { background: #dcfce7; color: #14532d; }
+.status-rejected  { background: #fee2e2; color: #7f1d1d; }
+.status-change_suggested { background: #ffedd5; color: #7c2d12; }
 
 .summary {
   margin-top: 0.8rem;
