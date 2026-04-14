@@ -230,6 +230,54 @@ export const createUser = async (input: {
   return mapUserRow(result.rows[0]);
 };
 
+export const updateUser = async (id: string, updates: {
+  name?: string;
+  email?: string;
+  party?: Party;
+  role?: UserRole;
+  active?: boolean;
+}): Promise<User> => {
+  if (!usingPostgres) {
+    const user = memory.users.find((u) => u.id === id);
+    if (!user) throw new Error("User not found");
+    if (updates.name   !== undefined) user.name   = updates.name;
+    if (updates.email  !== undefined) user.email  = updates.email;
+    if (updates.party  !== undefined) user.party  = updates.party;
+    if (updates.role   !== undefined) user.role   = updates.role;
+    if (updates.active !== undefined) user.active = updates.active;
+    return user;
+  }
+  const result = await pool!.query(
+    `update users set
+       name   = coalesce($2, name),
+       email  = coalesce($3, email),
+       party  = coalesce($4::party, party),
+       role   = coalesce($5::user_role, role),
+       active = coalesce($6, active)
+     where id = $1 returning *`,
+    [id, updates.name ?? null, updates.email ?? null,
+     updates.party ?? null, updates.role ?? null, updates.active ?? null]
+  );
+  if (!result.rows[0]) throw new Error("User not found");
+  return mapUserRow(result.rows[0]);
+};
+
+export const deleteUser = async (id: string): Promise<void> => {
+  if (!usingPostgres) {
+    memory.users = memory.users.filter((u) => u.id !== id);
+    return;
+  }
+  await pool!.query("delete from users where id = $1", [id]);
+};
+
+export const deleteCase = async (id: string): Promise<void> => {
+  if (!usingPostgres) {
+    memory.cases = memory.cases.filter((c) => c.id !== id);
+    return;
+  }
+  await pool!.query("delete from cases where id = $1", [id]);
+};
+
 export const createPasswordResetToken = async (userId: string, token: string, expiresAt: string): Promise<void> => {
   if (!usingPostgres) {
     memory.resetTokens.push({ token, userId, expiresAt });

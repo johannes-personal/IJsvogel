@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { z } from "zod";
-import { requireAuth, type AuthedRequest } from "../middleware/auth.js";
+import { requireAuth, requireSuperadmin, type AuthedRequest } from "../middleware/auth.js";
 import type { CaseStatus } from "../types.js";
 import {
   appendAudit,
   createCase,
+  deleteCase,
   getCaseById,
   getClientName,
   getUserById,
@@ -181,4 +182,14 @@ caseRouter.patch("/:id", async (req: AuthedRequest, res) => {
   await appendAudit("case_updated", user.id, updated.id, updated.type);
 
   return res.json({ case: updated });
+});
+
+caseRouter.delete("/:id", requireSuperadmin, async (req: AuthedRequest, res) => {
+  const existing = await getCaseById(req.params.id);
+  if (!existing) {
+    return res.status(404).json({ message: "Casus niet gevonden" });
+  }
+  await deleteCase(req.params.id);
+  await appendAudit("case_deleted", req.userId!, req.params.id, existing.type);
+  return res.json({ message: "Casus verwijderd" });
 });

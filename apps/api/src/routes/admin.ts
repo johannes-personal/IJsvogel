@@ -5,12 +5,14 @@ import {
   appendAudit,
   createPasswordResetToken,
   createUser,
+  deleteUser,
   getClientMap,
   getNotificationSettings,
   getUserById,
   getUserByEmail,
   listUsers,
   updateNotificationSettings,
+  updateUser,
   upsertClientMap
 } from "../services/store.js";
 
@@ -119,4 +121,43 @@ adminRouter.post("/users/reset-password", async (req: AuthedRequest, res) => {
   await appendAudit("password_reset_forced", req.userId!, user.id, user.email);
   console.log(`[MAIL][ADMIN_PASSWORD_RESET] to=${user.email} token=${token}`);
   return res.json({ message: "Resetmail verzonden" });
+});
+
+const userUpdateSchema = z.object({
+  name:   z.string().min(1).optional(),
+  email:  z.string().email().optional(),
+  party:  z.enum(["Anidis", "NedCargo", "IJsvogel"]).optional(),
+  role:   z.enum(["superadmin", "party_user"]).optional(),
+  active: z.boolean().optional()
+});
+
+adminRouter.patch("/users/:id", async (req: AuthedRequest, res) => {
+  const parsed = userUpdateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ message: "Ongeldige invoer" });
+  }
+
+  const target = await getUserById(req.params.id);
+  if (!target) {
+    return res.status(404).json({ message: "Gebruiker niet gevonden" });
+  }
+
+  const updated = await updateUser(req.params.id, parsed.data);
+  await appendAudit("user_updated", req.userId!, updated.id, updated.email);
+  return res.json({ user: updated });
+});
+
+adminRouter.delete("/users/:id", async (req: AuthedRequest, res) => {
+  if (req.params.id === req.userId) {
+    return res.status(400).json({ message: "Je kunt je eigen account niet verwijderen" });
+  }
+
+  const target = await getUserById(req.params.id);
+  if (!target) {
+    return res.status(404).json({ message: "Gebruiker niet gevonden" });
+  }
+
+  await deleteUser(req.params.id);
+  await appendAudit("user_deleted", req.userId!, req.params.id, target.email);
+  return res.json({ message: "Gebruiker verwijderd" });
 });
