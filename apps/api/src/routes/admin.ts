@@ -16,6 +16,8 @@ import {
   upsertClientMap
 } from "../services/store.js";
 
+import { sendPasswordResetEmail } from "../services/mailer.js";
+
 export const adminRouter = Router();
 adminRouter.use(requireAuth, requireSuperadmin);
 
@@ -119,8 +121,8 @@ adminRouter.post("/users/reset-password", async (req: AuthedRequest, res) => {
   await createPasswordResetToken(user.id, token, expiresAt);
 
   await appendAudit("password_reset_forced", req.userId!, user.id, user.email);
-  console.log(`[MAIL][ADMIN_PASSWORD_RESET] to=${user.email} token=${token}`);
-  return res.json({ message: "Resetmail verzonden" });
+  await sendPasswordResetEmail(user.email, token);
+  return res.json({ message: "Resetmail verzonden", token });
 });
 
 const userUpdateSchema = z.object({

@@ -1,77 +1,97 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { CaseForm } from "./components/CaseForm";
 import { CaseTable } from "./components/CaseTable";
 import { AdminPanel } from "./components/AdminPanel";
+import { LoginPage } from "./components/LoginPage";
+import { ResetPasswordPage } from "./components/ResetPasswordPage";
+import { ChangePasswordModal } from "./components/ChangePasswordModal";
 import type { CaseRecord, NotificationSettings, User } from "./types/domain";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
+const STORAGE_KEY = "ijsvogel_user_id";
 
 type Tab = "nieuw" | "overzicht" | "instellingen";
 
 export const App = () => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [userId, setUserId] = useState("");
+  // Check URL for password-reset token
+  const resetToken = new URLSearchParams(window.location.search).get("reset");
+
+  const [userId, setUserId] = useState<string>(() => localStorage.getItem(STORAGE_KEY) ?? "");
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
   const [cases, setCases] = useState<CaseRecord[]>([]);
   const [settings, setSettings] = useState<NotificationSettings | null>(null);
   const [managedUsers, setManagedUsers] = useState<User[]>([]);
   const [activeTab, setActiveTab] = useState<Tab>("overzicht");
-
-  const currentUser = useMemo(() => users.find((u) => u.id === userId) ?? null, [users, userId]);
+  const [showChangePw, setShowChangePw] = useState(false);
 
   const isSuperadmin = currentUser?.role === "superadmin";
   const canSubmit = currentUser ? (currentUser.party !== "IJsvogel" || isSuperadmin) : false;
 
-  // Re-route to a valid tab when user switches
   const effectiveTab: Tab = (() => {
     if (activeTab === "nieuw" && !canSubmit) return "overzicht";
     if (activeTab === "instellingen" && !isSuperadmin) return "overzicht";
     return activeTab;
   })();
 
-  const loadDevUsers = async () => {
-    const res = await fetch(`${API_BASE_URL}/auth/dev-users`);
-    if (!res.ok) return;
-    const data = await res.json();
-    const loadedUsers = (data.users || []) as User[];
-    setUsers(loadedUsers);
-    if (!userId && loadedUsers.length > 0) {
-      setUserId(loadedUsers[0].id);
-    }
+  // Verify stored userId on mount
+  useEffect(() => {
+    const verify = async () => {
+      if (!userId) { setAuthLoading(false); return; }
+      const res = await fetch(`${API_BASE_URL}/auth/me`, { headers: { "x-user-id": userId } });
+      if (!res.ok) {
+        localStorage.removeItem(STORAGE_KEY);
+        setUserId("");
+        setCurrentUser(null);
+      } else {
+        const data = await res.json();
+        setCurrentUser(data.user);
+      }
+      setAuthLoading(false);
+    };
+    void verify();
+  }, []);
+
+  const handleLogin = (loggedInUserId: string) => {
+    localStorage.setItem(STORAGE_KEY, loggedInUserId);
+    setUserId(loggedInUserId);
+    // Fetch user object
+    fetch(`${API_BASE_URL}/auth/me`, { headers: { "x-user-id": loggedInUserId } })
+      .then((r) => r.json())
+      .then((d) => setCurrentUser(d.user));
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    setUserId("");
+    setCurrentUser(null);
+    setCases([]);
+    setSettings(null);
+    setManagedUsers([]);
   };
 
   const loadOverview = async () => {
     if (!userId) return;
-    const res = await fetch(`${API_BASE_URL}/cases/overview`, {
-      headers: { "x-user-id": userId }
-    });
+    const res = await fetch(`${API_BASE_URL}/cases/overview`, { headers: { "x-user-id": userId } });
     if (!res.ok) return;
     const data = await res.json();
     setCases(data.cases || []);
   };
 
   const loadAdmin = async () => {
-    if (!userId || !currentUser) return;
-    if (currentUser.role !== "superadmin") return;
-    const res = await fetch(`${API_BASE_URL}/admin/notification-settings`, {
-      headers: { "x-user-id": userId }
-    });
+    if (!userId || !isSuperadmin) return;
+    const res = await fetch(`${API_BASE_URL}/admin/notification-settings`, { headers: { "x-user-id": userId } });
     if (!res.ok) return;
-    const data = await res.json();
-    setSettings(data.settings);
+    setSettings((await res.json()).settings);
   };
 
   const loadUsers = async () => {
-    if (!userId || !currentUser) return;
-    if (currentUser.role !== "superadmin") return;
-    const res = await fetch(`${API_BASE_URL}/admin/users`, {
-      headers: { "x-user-id": userId }
-    });
+    if (!userId || !isSuperadmin) return;
+    const res = await fetch(`${API_BASE_URL}/admin/users`, { headers: { "x-user-id": userId } });
     if (!res.ok) return;
-    const data = await res.json();
-    setManagedUsers(data.users || []);
+    setManagedUsers((await res.json()).users || []);
   };
-
-  useEffect(() => { void loadDevUsers(); }, []);
 
   useEffect(() => {
     if (!userId || !currentUser) return;
@@ -80,35 +100,60 @@ export const App = () => {
     void loadUsers();
   }, [userId, currentUser?.role]);
 
-  const routeItems = cases.filter((c) => c.type === "Routeafwijking");
+  const routeItems  = cases.filter((c) => c.type === "Routeafwijking");
   const palletItems = cases.filter((c) => c.type === "Palletafwijking");
-  const otherItems = cases.filter((c) => c.type === "Ander");
+  const otherItems  = cases.filter((c) => c.type === "Ander");
 
-  if (!currentUser) {
+  // Show reset page if URL has ?reset=...
+  if (resetToken) {
+    return (
+      <ResetPasswordPage
+        token={resetToken}
+        onDone={() => { window.history.replaceState({}, "", "/"); }}
+      />
+    );
+  }
+
+  if (authLoading) {
     return (
       <div className="layout">
-        <header>
-          <h1>IJsvogel Portaal</h1>
-          <p>Gebruikers laden...</p>
-        </header>
+        <header><h1>IJsvogel Portaal</h1></header>
       </div>
     );
   }
 
+  if (!currentUser) {
+    return <LoginPage onLogin={handleLogin} />;
+  }
+
   return (
     <div className="layout">
+      {showChangePw && (
+        <ChangePasswordModal userId={userId} onClose={() => setShowChangePw(false)} />
+      )}
+
       <header>
         <h1>IJsvogel Portaal</h1>
-        <label>
-          Actieve gebruiker
-          <select value={userId} onChange={(e) => setUserId(e.target.value)}>
-            {users.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.name} ({u.party})
-              </option>
-            ))}
-          </select>
-        </label>
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          <span style={{ fontSize: "0.9rem" }}>
+            {currentUser.name} <span style={{ opacity: 0.75 }}>({currentUser.party})</span>
+          </span>
+          <button
+            className="act-btn act-cancel"
+            style={{ fontSize: "0.8rem" }}
+            onClick={() => setShowChangePw(true)}
+            title="Wachtwoord wijzigen"
+          >
+            🔑 Wachtwoord
+          </button>
+          <button
+            className="act-btn act-reject"
+            style={{ fontSize: "0.8rem" }}
+            onClick={handleLogout}
+          >
+            Uitloggen
+          </button>
+        </div>
       </header>
 
       <nav className="tabs">
@@ -146,38 +191,14 @@ export const App = () => {
 
       {effectiveTab === "overzicht" && (
         <>
-          <CaseTable
-            type="Routeafwijking"
-            items={routeItems}
-            userParty={currentUser.party}
-            userId={userId}
-            onUpdated={loadOverview}
-          />
-          <CaseTable
-            type="Palletafwijking"
-            items={palletItems}
-            userParty={currentUser.party}
-            userId={userId}
-            onUpdated={loadOverview}
-          />
-          <CaseTable
-            type="Ander"
-            items={otherItems}
-            userParty={currentUser.party}
-            userId={userId}
-            onUpdated={loadOverview}
-          />
+          <CaseTable type="Routeafwijking" items={routeItems} userParty={currentUser.party} userId={userId} onUpdated={loadOverview} />
+          <CaseTable type="Palletafwijking" items={palletItems} userParty={currentUser.party} userId={userId} onUpdated={loadOverview} />
+          <CaseTable type="Ander" items={otherItems} userParty={currentUser.party} userId={userId} onUpdated={loadOverview} />
         </>
       )}
 
       {effectiveTab === "instellingen" && (
-        <AdminPanel
-          userId={userId}
-          settings={settings}
-          users={managedUsers}
-          onRefresh={loadAdmin}
-          onUsersRefresh={loadUsers}
-        />
+        <AdminPanel userId={userId} settings={settings} users={managedUsers} onRefresh={loadAdmin} onUsersRefresh={loadUsers} />
       )}
     </div>
   );

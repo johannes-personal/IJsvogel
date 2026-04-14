@@ -17,6 +17,7 @@ type EditingUser = {
   email: string;
   party: Party;
   role: Role;
+  active: boolean;
 };
 
 const DUTCH_STATUS: Record<string, string> = {
@@ -109,7 +110,14 @@ export const AdminPanel = ({ userId, settings, users, onRefresh, onUsersRefresh 
       body: JSON.stringify({ userId: targetUserId })
     });
     const data = await res.json();
-    alert(data.message || (res.ok ? "Resetmail verzonden" : "Reset mislukt"));
+    if (!res.ok) { alert(data.message || "Reset mislukt"); return; }
+    // If a token was returned (no SMTP configured), show the reset link
+    if (data.token) {
+      const link = `${window.location.origin}?reset=${data.token}`;
+      prompt("Kopieer deze resetlink en stuur deze handmatig naar de gebruiker:", link);
+    } else {
+      alert(data.message || "Resetmail verzonden");
+    }
   };
 
   const saveUser = async () => {
@@ -117,7 +125,7 @@ export const AdminPanel = ({ userId, settings, users, onRefresh, onUsersRefresh 
     const res = await fetch(`${API_BASE_URL}/admin/users/${editingUser.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json", "x-user-id": userId },
-      body: JSON.stringify({ name: editingUser.name, email: editingUser.email, party: editingUser.party, role: editingUser.role })
+      body: JSON.stringify({ name: editingUser.name, email: editingUser.email, party: editingUser.party, role: editingUser.role, active: editingUser.active })
     });
     if (!res.ok) { const d = await res.json(); alert(d.message || "Opslaan mislukt"); return; }
     setEditingUser(null);
@@ -205,7 +213,7 @@ export const AdminPanel = ({ userId, settings, users, onRefresh, onUsersRefresh 
         <table>
           <thead>
             <tr>
-              <th>Naam</th><th>E-mail</th><th>Partij</th><th>Rol</th><th>Acties</th>
+              <th>Naam</th><th>E-mail</th><th>Partij</th><th>Rol</th><th>Actief</th><th>Acties</th>
             </tr>
           </thead>
           <tbody>
@@ -242,6 +250,11 @@ export const AdminPanel = ({ userId, settings, users, onRefresh, onUsersRefresh 
                       )
                       : u.role}
                   </td>
+                  <td style={{ textAlign: "center" }}>
+                    {isEditing
+                      ? <input type="checkbox" checked={editingUser!.active} onChange={(e) => setEditingUser({ ...editingUser!, active: e.target.checked })} />
+                      : <span style={{ color: u.active ? "green" : "#aaa" }}>{u.active ? "✔" : "✖"}</span>}
+                  </td>
                   <td style={{ whiteSpace: "nowrap" }}>
                     {isEditing ? (
                       <>
@@ -250,7 +263,7 @@ export const AdminPanel = ({ userId, settings, users, onRefresh, onUsersRefresh 
                       </>
                     ) : (
                       <>
-                        <button className="act-btn act-edit" onClick={() => setEditingUser({ id: u.id, name: u.name, email: u.email, party: u.party, role: u.role })}>Bewerken</button>{" "}
+                        <button className="act-btn act-edit" onClick={() => setEditingUser({ id: u.id, name: u.name, email: u.email, party: u.party, role: u.role, active: u.active })}>Bewerken</button>{" "}
                         <button className="act-btn act-cancel" onClick={() => forceReset(u.id)}>Reset</button>{" "}
                         {u.id !== userId && (
                           <button className="act-btn act-reject" onClick={() => removeUser(u.id, u.name)}>Verwijderen</button>

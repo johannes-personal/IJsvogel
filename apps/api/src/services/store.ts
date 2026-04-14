@@ -5,7 +5,7 @@ import type { CaseRecord, CaseStatus, NotificationSettings, Party, User, UserRol
 const now = new Date().toISOString();
 const earlier = (hoursAgo: number) => new Date(Date.now() - hoursAgo * 60 * 60 * 1000).toISOString();
 
-type StoredResetToken = { token: string; userId: string; expiresAt: string };
+type StoredResetToken = { token: string; userId: string; expiresAt: string; usedAt?: string };
 type AuditEntry = { id: string; action: string; at: string; userId: string; entityId?: string; detail?: string };
 
 type MemoryStore = {
@@ -288,6 +288,45 @@ export const createPasswordResetToken = async (userId: string, token: string, ex
     "insert into password_reset_tokens (user_id, token_hash, expires_at) values ($1, $2, $3)",
     [userId, token, expiresAt]
   );
+};
+
+export const consumeResetToken = async (token: string): Promise<string | null> => {
+  // Returns the user_id if the token is valid (not expired, not used), and marks it used
+  if (!usingPostgres) {
+    const now = new Date().toISOString();
+    const idx = memory.resetTokens.findIndex(
+      (t) => t.token === token && t.expiresAt > now && !t.usedAt
+    );
+    if (idx === -1) return null;
+    memory.resetTokens[idx].usedAt = now;
+    return memory.resetTokens[idx].userId;
+  }
+  const result = await pool!.query(
+    `update password_reset_tokens
+     set used_at = now()
+     where token_hash = $1 and expires_at > now() and used_at is null
+     returning user_id`,
+    [token]
+  );
+  return result.rows[0]?.user_id ?? null;
+};
+
+export const getUserPasswordHash = async (id: string): Promise<string | null> => {
+  if (!usingPostgres) {
+    const user = memory.users.find((u) => u.id === id) as any;
+    return user?.passwordHash ?? null;
+  }
+  const result = await pool!.query("select password_hash from users where id = $1", [id]);
+  return result.rows[0]?.password_hash ?? null;
+};
+
+export const setUserPassword = async (id: string, hash: string): Promise<void> => {
+  if (!usingPostgres) {
+    const user = memory.users.find((u) => u.id === id) as any;
+    if (user) user.passwordHash = hash;
+    return;
+  }
+  await pool!.query("update users set password_hash = $2 where id = $1", [id, hash]);
 };
 
 export const getClientName = async (clientNumber?: string): Promise<string | undefined> => {
