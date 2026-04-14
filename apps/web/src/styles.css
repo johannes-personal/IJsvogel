@@ -170,6 +170,35 @@ th {
   color: #fff;
 }
 
+.act-edit {
+  background: #1d4ed8;
+  color: #fff;
+}
+
+.act-cancel {
+  background: #6b7280;
+  color: #fff;
+}
+
+/* Inline edit inputs inside table cells */
+.edit-input {
+  width: 100%;
+  min-width: 90px;
+  margin: 0;
+  padding: 0.2rem 0.35rem;
+  font-size: 0.84rem;
+  border: 1px solid var(--brand-orange);
+  border-radius: 3px;
+}
+
+textarea.edit-input {
+  resize: vertical;
+}
+
+tr.row-editing {
+  background: #fff8f0;
+}
+
 /* Status badge */
 .status-badge {
   display: inline-block;
@@ -182,7 +211,7 @@ th {
 .status-pending   { background: #fef9c3; color: #713f12; }
 .status-approved  { background: #dcfce7; color: #14532d; }
 .status-rejected  { background: #fee2e2; color: #7f1d1d; }
-.status-change_suggested { background: #ffedd5; color: #7c2d12; }
+.status-wijziging { background: #ffedd5; color: #7c2d12; }
 
 .summary {
   margin-top: 0.8rem;

@@ -20,6 +20,8 @@ export interface CaseRecord {
   submittedBy: "Anidis" | "NedCargo";
   clientNumber?: string;
   clientName?: string;
+  clientPostcode?: string;
+  clientPlaats?: string;
   fromDate?: string;
   toDate?: string;
   comment: string;

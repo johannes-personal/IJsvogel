@@ -157,6 +157,8 @@ const mapCaseRow = (row: any): CaseRecord => ({
   submittedBy: row.submitted_by,
   clientNumber: row.client_number ?? undefined,
   clientName: row.client_name ?? undefined,
+  clientPostcode: row.postcode ?? undefined,
+  clientPlaats: row.plaats ?? undefined,
   fromDate: row.from_date ?? undefined,
   toDate: row.to_date ?? undefined,
   comment: row.comment,
@@ -258,7 +260,12 @@ export const listCases = async (): Promise<CaseRecord[]> => {
     return memory.cases;
   }
 
-  const result = await pool!.query("select * from cases order by submission_time desc");
+  const result = await pool!.query(
+    `select c.*, cm.postcode, cm.plaats
+     from cases c
+     left join client_map cm on c.client_number = cm.client_number
+     order by c.submission_time desc`
+  );
   return result.rows.map(mapCaseRow);
 };
 
@@ -341,6 +348,50 @@ export const updateCaseDecision = async (input: {
   if (!result.rows[0]) {
     throw new Error("Case not found");
   }
+  return mapCaseRow(result.rows[0]);
+};
+
+export const updateCase = async (id: string, updates: {
+  clientNumber?: string | null;
+  clientName?: string | null;
+  fromDate?: string | null;
+  toDate?: string | null;
+  comment?: string;
+  status?: CaseStatus;
+}): Promise<CaseRecord> => {
+  if (!usingPostgres) {
+    const current = memory.cases.find((c) => c.id === id);
+    if (!current) throw new Error("Case not found");
+    if (updates.clientNumber !== undefined) current.clientNumber = updates.clientNumber ?? undefined;
+    if (updates.clientName !== undefined) current.clientName = updates.clientName ?? undefined;
+    if (updates.fromDate !== undefined) current.fromDate = updates.fromDate ?? undefined;
+    if (updates.toDate !== undefined) current.toDate = updates.toDate ?? undefined;
+    if (updates.comment !== undefined) current.comment = updates.comment;
+    if (updates.status !== undefined) current.status = updates.status;
+    return current;
+  }
+
+  const result = await pool!.query(
+    `with updated as (
+       update cases set
+         client_number = coalesce($2, client_number),
+         client_name   = coalesce($3, client_name),
+         from_date     = coalesce($4::date, from_date),
+         to_date       = coalesce($5::date, to_date),
+         comment       = coalesce($6, comment),
+         status        = coalesce($7::case_status, status)
+       where id = $1
+       returning *
+     )
+     select u.*, cm.postcode, cm.plaats
+     from updated u
+     left join client_map cm on u.client_number = cm.client_number`,
+    [id, updates.clientNumber ?? null, updates.clientName ?? null,
+     updates.fromDate ?? null, updates.toDate ?? null,
+     updates.comment ?? null, updates.status ?? null]
+  );
+
+  if (!result.rows[0]) throw new Error("Case not found");
   return mapCaseRow(result.rows[0]);
 };
 

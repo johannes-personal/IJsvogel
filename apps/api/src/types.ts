@@ -21,6 +21,8 @@ export interface CaseRecord {
   submittedBy: Exclude<Party, "IJsvogel">;
   clientNumber?: string;
   clientName?: string;
+  clientPostcode?: string;
+  clientPlaats?: string;
   fromDate?: string;
   toDate?: string;
   comment: string;

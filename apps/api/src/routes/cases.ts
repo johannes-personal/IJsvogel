@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { requireAuth, type AuthedRequest } from "../middleware/auth.js";
+import type { CaseStatus } from "../types.js";
 import {
   appendAudit,
   createCase,
@@ -8,6 +9,7 @@ import {
   getClientName,
   getUserById,
   listCases,
+  updateCase,
   updateCaseDecision
 } from "../services/store.js";
 import { sendStatusNotification, sendSubmissionNotification } from "../services/mailer.js";
@@ -102,7 +104,7 @@ caseRouter.post("/:id/action", async (req: AuthedRequest, res) => {
     return res.status(404).json({ message: "Casus niet gevonden" });
   }
 
-  if (current.status !== "Pending" && !(current.status === "Wijziging voorgesteld" && parsed.data.action === "approve")) {
+  if (current.status !== "Pending" && current.status !== "Wijziging voorgesteld") {
     return res.status(400).json({ message: "Deze actie is niet toegestaan in huidige status" });
   }
 
@@ -125,6 +127,58 @@ caseRouter.post("/:id/action", async (req: AuthedRequest, res) => {
 
   await appendAudit("case_status_changed", user.id, updated.id, updated.status);
   sendStatusNotification(updated.id, updated.status);
+
+  return res.json({ case: updated });
+});
+
+const updateCaseSchema = z.object({
+  clientNumber: z.string().optional(),
+  fromDate: z.string().optional(),
+  toDate: z.string().optional(),
+  comment: z.string().min(1)
+});
+
+caseRouter.patch("/:id", async (req: AuthedRequest, res) => {
+  const parsed = updateCaseSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ message: "Ongeldige invoer" });
+  }
+
+  const user = await getUserById(req.userId!);
+  if (!user) {
+    return res.status(401).json({ message: "Niet ingelogd" });
+  }
+
+  const current = await getCaseById(req.params.id);
+  if (!current) {
+    return res.status(404).json({ message: "Casus niet gevonden" });
+  }
+
+  if (user.role !== "superadmin" && user.party !== current.submittedBy) {
+    return res.status(403).json({ message: "Alleen de indiener kan een casus bewerken" });
+  }
+
+  if (current.status !== "Pending" && current.status !== "Wijziging voorgesteld") {
+    return res.status(400).json({ message: "Deze casus kan niet meer worden bewerkt" });
+  }
+
+  const clientName = parsed.data.clientNumber
+    ? await getClientName(parsed.data.clientNumber)
+    : current.clientName;
+
+  const newStatus: CaseStatus | undefined =
+    current.status === "Wijziging voorgesteld" ? "Pending" : undefined;
+
+  const updated = await updateCase(current.id, {
+    clientNumber: parsed.data.clientNumber ?? null,
+    clientName: clientName ?? null,
+    fromDate: parsed.data.fromDate ?? null,
+    toDate: parsed.data.toDate ?? null,
+    comment: parsed.data.comment,
+    status: newStatus
+  });
+
+  await appendAudit("case_updated", user.id, updated.id, updated.type);
 
   return res.json({ case: updated });
 });
