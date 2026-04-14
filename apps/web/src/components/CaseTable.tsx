@@ -91,6 +91,35 @@ export const CaseTable = ({ type, items, userParty, userId, onUpdated }: Props) 
     return item.submittedBy === userParty;
   };
 
+  const canResubmitItem = (item: CaseRecord) => {
+    if (item.status !== "Wijziging voorgesteld") return false;
+    if (userParty === "IJsvogel") return true;
+    return item.submittedBy === userParty;
+  };
+
+  const resubmit = async (item: CaseRecord) => {
+    setBusy(true);
+    try {
+      const body: Record<string, string> = { comment: item.comment };
+      if (item.clientNumber) body.clientNumber = item.clientNumber;
+      if (item.fromDate)     body.fromDate     = item.fromDate;
+      if (item.toDate)       body.toDate       = item.toDate;
+      const res = await fetch(`${API_BASE_URL}/cases/${item.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "x-user-id": userId },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.message || "Opnieuw indienen mislukt");
+        return;
+      }
+      await onUpdated();
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const startEdit = (item: CaseRecord) => {
     setEditState({
       clientNumber: item.clientNumber ?? "",
@@ -165,7 +194,7 @@ export const CaseTable = ({ type, items, userParty, userId, onUpdated }: Props) 
               {type === "Routeafwijking" && <th>Van</th>}
               {type === "Routeafwijking" && <th>Tot</th>}
               <th>Opmerking</th>
-              <th>Toelichting</th>
+              <th>Opmerking wijziging</th>
               <th>Status</th>
               <th>Acties</th>
               <th>Besluit op</th>
@@ -255,7 +284,13 @@ export const CaseTable = ({ type, items, userParty, userId, onUpdated }: Props) 
                             <span className="act-label">Bewerken</span>
                           </button>
                         )}
-                        {!canActOnItem(item) && !canEditItem(item) && "-"}
+                        {canResubmitItem(item) && (
+                          <button className="act-btn act-approve" title="Opnieuw indienen" disabled={busy} onClick={() => resubmit(item)}>
+                            <span className="act-icon">↩</span>
+                            <span className="act-label">Opnieuw indienen</span>
+                          </button>
+                        )}
+                        {!canActOnItem(item) && !canEditItem(item) && !canResubmitItem(item) && "-"}
                       </div>
                     )}
                   </td>

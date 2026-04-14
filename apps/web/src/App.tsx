@@ -14,7 +14,7 @@ export const App = () => {
   const [cases, setCases] = useState<CaseRecord[]>([]);
   const [settings, setSettings] = useState<NotificationSettings | null>(null);
   const [managedUsers, setManagedUsers] = useState<User[]>([]);
-  const [activeTab, setActiveTab] = useState<Tab>("nieuw");
+  const [activeTab, setActiveTab] = useState<Tab>("overzicht");
 
   const currentUser = useMemo(() => users.find((u) => u.id === userId) ?? null, [users, userId]);
 
@@ -112,6 +112,12 @@ export const App = () => {
       </header>
 
       <nav className="tabs">
+        <button
+          className={`tab-btn${effectiveTab === "overzicht" ? " active" : ""}`}
+          onClick={() => setActiveTab("overzicht")}
+        >
+          Overzicht
+        </button>
         {canSubmit && (
           <button
             className={`tab-btn${effectiveTab === "nieuw" ? " active" : ""}`}
@@ -120,12 +126,6 @@ export const App = () => {
             Nieuwe melding
           </button>
         )}
-        <button
-          className={`tab-btn${effectiveTab === "overzicht" ? " active" : ""}`}
-          onClick={() => setActiveTab("overzicht")}
-        >
-          Overzicht
-        </button>
         {isSuperadmin && (
           <button
             className={`tab-btn${effectiveTab === "instellingen" ? " active" : ""}`}

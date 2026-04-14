@@ -2,9 +2,10 @@ import { jsxs as _jsxs, jsx as _jsx, Fragment as _Fragment } from "react/jsx-run
 import { useState } from "react";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
 export const CaseForm = ({ type, userId, isSuperadmin, onCreated }) => {
+    const today = new Date().toISOString().slice(0, 10);
     const [clientNumber, setClientNumber] = useState("");
-    const [fromDate, setFromDate] = useState("");
-    const [toDate, setToDate] = useState("");
+    const [fromDate, setFromDate] = useState(today);
+    const [toDate, setToDate] = useState(today);
     const [comment, setComment] = useState("");
     const [submittedAs, setSubmittedAs] = useState("Anidis");
     const [busy, setBusy] = useState(false);

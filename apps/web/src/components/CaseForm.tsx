@@ -11,9 +11,10 @@ type Props = {
 };
 
 export const CaseForm = ({ type, userId, isSuperadmin, onCreated }: Props) => {
+  const today = new Date().toISOString().slice(0, 10);
   const [clientNumber, setClientNumber] = useState("");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+  const [fromDate, setFromDate] = useState(today);
+  const [toDate, setToDate] = useState(today);
   const [comment, setComment] = useState("");
   const [submittedAs, setSubmittedAs] = useState<"Anidis" | "NedCargo">("Anidis");
   const [busy, setBusy] = useState(false);

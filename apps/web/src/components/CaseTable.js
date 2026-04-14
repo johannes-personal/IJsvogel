@@ -66,6 +66,39 @@ export const CaseTable = ({ type, items, userParty, userId, onUpdated }) => {
             return true;
         return item.submittedBy === userParty;
     };
+    const canResubmitItem = (item) => {
+        if (item.status !== "Wijziging voorgesteld")
+            return false;
+        if (userParty === "IJsvogel")
+            return true;
+        return item.submittedBy === userParty;
+    };
+    const resubmit = async (item) => {
+        setBusy(true);
+        try {
+            const body = { comment: item.comment };
+            if (item.clientNumber)
+                body.clientNumber = item.clientNumber;
+            if (item.fromDate)
+                body.fromDate = item.fromDate;
+            if (item.toDate)
+                body.toDate = item.toDate;
+            const res = await fetch(`${API_BASE_URL}/cases/${item.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json", "x-user-id": userId },
+                body: JSON.stringify(body),
+            });
+            if (!res.ok) {
+                const data = await res.json();
+                alert(data.message || "Opnieuw indienen mislukt");
+                return;
+            }
+            await onUpdated();
+        }
+        finally {
+            setBusy(false);
+        }
+    };
     const startEdit = (item) => {
         setEditState({
             clientNumber: item.clientNumber ?? "",
@@ -117,7 +150,7 @@ export const CaseTable = ({ type, items, userParty, userId, onUpdated }) => {
         }
         await onUpdated();
     };
-    return (_jsxs("div", { className: "card", children: [_jsxs("div", { className: "card-header", children: [_jsx("h3", { children: type }), _jsxs("label", { className: "filter-toggle", children: [_jsx("input", { type: "checkbox", checked: activeOnly, onChange: toggleFilter }), "Alleen actieve meldingen"] })] }), _jsx("div", { className: "table-wrap", children: _jsxs("table", { children: [_jsx("thead", { children: _jsxs("tr", { children: [_jsx("th", { children: "Ingediend op" }), _jsx("th", { children: "Ingediend door" }), _jsx("th", { children: "Klantnr." }), _jsx("th", { children: "Klantnaam" }), _jsx("th", { children: "Postcode" }), _jsx("th", { children: "Plaats" }), type === "Routeafwijking" && _jsx("th", { children: "Van" }), type === "Routeafwijking" && _jsx("th", { children: "Tot" }), _jsx("th", { children: "Opmerking" }), _jsx("th", { children: "Toelichting" }), _jsx("th", { children: "Status" }), _jsx("th", { children: "Acties" }), _jsx("th", { children: "Besluit op" })] }) }), _jsxs("tbody", { children: [visibleItems.length === 0 && (_jsx("tr", { children: _jsx("td", { colSpan: totalCols, style: { textAlign: "center", color: "#888" }, children: activeOnly ? "Geen actieve meldingen" : "Geen meldingen" }) })), visibleItems.map((item) => {
+    return (_jsxs("div", { className: "card", children: [_jsxs("div", { className: "card-header", children: [_jsx("h3", { children: type }), _jsxs("label", { className: "filter-toggle", children: [_jsx("input", { type: "checkbox", checked: activeOnly, onChange: toggleFilter }), "Alleen actieve meldingen"] })] }), _jsx("div", { className: "table-wrap", children: _jsxs("table", { children: [_jsx("thead", { children: _jsxs("tr", { children: [_jsx("th", { children: "Ingediend op" }), _jsx("th", { children: "Ingediend door" }), _jsx("th", { children: "Klantnr." }), _jsx("th", { children: "Klantnaam" }), _jsx("th", { children: "Postcode" }), _jsx("th", { children: "Plaats" }), type === "Routeafwijking" && _jsx("th", { children: "Van" }), type === "Routeafwijking" && _jsx("th", { children: "Tot" }), _jsx("th", { children: "Opmerking" }), _jsx("th", { children: "Opmerking wijziging" }), _jsx("th", { children: "Status" }), _jsx("th", { children: "Acties" }), _jsx("th", { children: "Besluit op" })] }) }), _jsxs("tbody", { children: [visibleItems.length === 0 && (_jsx("tr", { children: _jsx("td", { colSpan: totalCols, style: { textAlign: "center", color: "#888" }, children: activeOnly ? "Geen actieve meldingen" : "Geen meldingen" }) })), visibleItems.map((item) => {
                                     const editing = editingId === item.id;
                                     return (_jsxs("tr", { className: editing ? "row-editing" : undefined, children: [_jsx("td", { className: "nowrap", children: fmtDateTime(item.submissionTime) }), _jsx("td", { className: "nowrap", children: item.submittedBy }), _jsx("td", { className: "nowrap", children: editing
                                                     ? _jsx("input", { className: "edit-input", value: editState.clientNumber, onChange: e => setEditState(s => ({ ...s, clientNumber: e.target.value })) })
@@ -127,6 +160,6 @@ export const CaseTable = ({ type, items, userParty, userId, onUpdated }) => {
                                                     ? _jsx("input", { className: "edit-input", type: "date", value: editState.toDate, onChange: e => setEditState(s => ({ ...s, toDate: e.target.value })) })
                                                     : fmtDate(item.toDate) })), _jsx("td", { className: "comment-cell", children: editing
                                                     ? _jsx("textarea", { className: "edit-input", rows: 2, value: editState.comment, onChange: e => setEditState(s => ({ ...s, comment: e.target.value })) })
-                                                    : item.comment }), _jsx("td", { className: "comment-cell", children: item.decisionComment || "-" }), _jsx("td", { className: "nowrap", children: _jsx("span", { className: `status-badge ${STATUS_CSS[item.status] ?? ""}`, children: STATUS_LABELS[item.status] ?? item.status }) }), _jsx("td", { className: "nowrap", children: editing ? (_jsxs("div", { className: "actions", children: [_jsxs("button", { className: "act-btn act-approve", disabled: busy, onClick: () => saveEdit(item), children: [_jsx("span", { className: "act-icon", children: "\uD83D\uDCBE" }), _jsx("span", { className: "act-label", children: "Opslaan" })] }), _jsxs("button", { className: "act-btn act-cancel", disabled: busy, onClick: cancelEdit, children: [_jsx("span", { className: "act-icon", children: "\u2715" }), _jsx("span", { className: "act-label", children: "Annuleren" })] })] })) : (_jsxs("div", { className: "actions", children: [canActOnItem(item) && ACTION_BUTTONS.map(({ action, label, icon, cls }) => (_jsxs("button", { className: `act-btn ${cls}`, title: label, onClick: () => applyAction(item.id, action), children: [_jsx("span", { className: "act-icon", children: icon }), _jsx("span", { className: "act-label", children: label })] }, action))), canEditItem(item) && (_jsxs("button", { className: "act-btn act-edit", title: "Bewerken", onClick: () => startEdit(item), children: [_jsx("span", { className: "act-icon", children: "\u270F" }), _jsx("span", { className: "act-label", children: "Bewerken" })] })), !canActOnItem(item) && !canEditItem(item) && "-"] })) }), _jsx("td", { className: "nowrap", children: fmtDateTime(item.decidedOn) })] }, item.id));
+                                                    : item.comment }), _jsx("td", { className: "comment-cell", children: item.decisionComment || "-" }), _jsx("td", { className: "nowrap", children: _jsx("span", { className: `status-badge ${STATUS_CSS[item.status] ?? ""}`, children: STATUS_LABELS[item.status] ?? item.status }) }), _jsx("td", { className: "nowrap", children: editing ? (_jsxs("div", { className: "actions", children: [_jsxs("button", { className: "act-btn act-approve", disabled: busy, onClick: () => saveEdit(item), children: [_jsx("span", { className: "act-icon", children: "\uD83D\uDCBE" }), _jsx("span", { className: "act-label", children: "Opslaan" })] }), _jsxs("button", { className: "act-btn act-cancel", disabled: busy, onClick: cancelEdit, children: [_jsx("span", { className: "act-icon", children: "\u2715" }), _jsx("span", { className: "act-label", children: "Annuleren" })] })] })) : (_jsxs("div", { className: "actions", children: [canActOnItem(item) && ACTION_BUTTONS.map(({ action, label, icon, cls }) => (_jsxs("button", { className: `act-btn ${cls}`, title: label, onClick: () => applyAction(item.id, action), children: [_jsx("span", { className: "act-icon", children: icon }), _jsx("span", { className: "act-label", children: label })] }, action))), canEditItem(item) && (_jsxs("button", { className: "act-btn act-edit", title: "Bewerken", onClick: () => startEdit(item), children: [_jsx("span", { className: "act-icon", children: "\u270F" }), _jsx("span", { className: "act-label", children: "Bewerken" })] })), canResubmitItem(item) && (_jsxs("button", { className: "act-btn act-approve", title: "Opnieuw indienen", disabled: busy, onClick: () => resubmit(item), children: [_jsx("span", { className: "act-icon", children: "\u21A9" }), _jsx("span", { className: "act-label", children: "Opnieuw indienen" })] })), !canActOnItem(item) && !canEditItem(item) && !canResubmitItem(item) && "-"] })) }), _jsx("td", { className: "nowrap", children: fmtDateTime(item.decidedOn) })] }, item.id));
                                 })] })] }) })] }));
 };
