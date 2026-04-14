@@ -20,7 +20,8 @@ const createCaseSchema = z.object({
   clientNumber: z.string().optional(),
   fromDate: z.string().optional(),
   toDate: z.string().optional(),
-  comment: z.string().min(1)
+  comment: z.string().min(1),
+  submittedAs: z.enum(["Anidis", "NedCargo"]).optional()
 });
 
 caseRouter.get("/overview", async (req: AuthedRequest, res) => {
@@ -40,8 +41,17 @@ caseRouter.post("/", async (req: AuthedRequest, res) => {
   }
 
   const user = await getUserById(req.userId!);
-  if (!user || user.party === "IJsvogel") {
+  const isSuperadmin = user?.role === "superadmin";
+  if (!user || (user.party === "IJsvogel" && !isSuperadmin)) {
     return res.status(403).json({ message: "Alleen Anidis/NedCargo kunnen indienen" });
+  }
+
+  const submittedBy = (isSuperadmin && parsed.data.submittedAs)
+    ? parsed.data.submittedAs
+    : (user.party as "Anidis" | "NedCargo");
+
+  if (isSuperadmin && !parsed.data.submittedAs) {
+    return res.status(400).json({ message: "Superadmin moet een partij kiezen" });
   }
 
   if (parsed.data.type !== "Ander" && !parsed.data.clientNumber) {
@@ -56,7 +66,7 @@ caseRouter.post("/", async (req: AuthedRequest, res) => {
 
   const record = await createCase({
     type: parsed.data.type,
-    submittedBy: user.party,
+    submittedBy,
     clientNumber: parsed.data.clientNumber,
     clientName,
     fromDate: parsed.data.fromDate,

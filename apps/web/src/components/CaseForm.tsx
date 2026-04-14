@@ -6,14 +6,16 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001
 type Props = {
   type: CaseType;
   userId: string;
+  isSuperadmin?: boolean;
   onCreated: () => Promise<void>;
 };
 
-export const CaseForm = ({ type, userId, onCreated }: Props) => {
+export const CaseForm = ({ type, userId, isSuperadmin, onCreated }: Props) => {
   const [clientNumber, setClientNumber] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [comment, setComment] = useState("");
+  const [submittedAs, setSubmittedAs] = useState<"Anidis" | "NedCargo">("Anidis");
   const [busy, setBusy] = useState(false);
 
   const submit = async () => {
@@ -23,6 +25,7 @@ export const CaseForm = ({ type, userId, onCreated }: Props) => {
       if (clientNumber) payload.clientNumber = clientNumber;
       if (fromDate) payload.fromDate = fromDate;
       if (toDate) payload.toDate = toDate;
+      if (isSuperadmin) payload.submittedAs = submittedAs;
 
       const res = await fetch(`${API_BASE_URL}/cases`, {
         method: "POST",
@@ -56,6 +59,15 @@ export const CaseForm = ({ type, userId, onCreated }: Props) => {
     <div className="card">
       <h3>{type} indienen</h3>
       <div className="form-grid">
+        {isSuperadmin && (
+          <label>
+            Namens partij *
+            <select value={submittedAs} onChange={(e) => setSubmittedAs(e.target.value as "Anidis" | "NedCargo")}>
+              <option value="Anidis">Anidis</option>
+              <option value="NedCargo">NedCargo</option>
+            </select>
+          </label>
+        )}
         <label>
           Klantnummer {clientRequired ? "*" : "(optioneel)"}
           <input value={clientNumber} onChange={(e) => setClientNumber(e.target.value)} />

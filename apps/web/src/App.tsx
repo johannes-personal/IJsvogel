@@ -18,8 +18,8 @@ export const App = () => {
 
   const currentUser = useMemo(() => users.find((u) => u.id === userId) ?? null, [users, userId]);
 
-  const canSubmit = currentUser ? currentUser.party !== "IJsvogel" : false;
   const isSuperadmin = currentUser?.role === "superadmin";
+  const canSubmit = currentUser ? (currentUser.party !== "IJsvogel" || isSuperadmin) : false;
 
   // Re-route to a valid tab when user switches
   const effectiveTab: Tab = (() => {
@@ -138,9 +138,9 @@ export const App = () => {
 
       {effectiveTab === "nieuw" && (
         <section className="forms-stack">
-          <CaseForm type="Routeafwijking" userId={userId} onCreated={loadOverview} />
-          <CaseForm type="Palletafwijking" userId={userId} onCreated={loadOverview} />
-          <CaseForm type="Ander" userId={userId} onCreated={loadOverview} />
+          <CaseForm type="Routeafwijking" userId={userId} isSuperadmin={isSuperadmin} onCreated={loadOverview} />
+          <CaseForm type="Palletafwijking" userId={userId} isSuperadmin={isSuperadmin} onCreated={loadOverview} />
+          <CaseForm type="Ander" userId={userId} isSuperadmin={isSuperadmin} onCreated={loadOverview} />
         </section>
       )}
 
