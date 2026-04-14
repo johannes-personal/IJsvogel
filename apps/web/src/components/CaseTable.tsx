@@ -48,14 +48,32 @@ const ACTION_BUTTONS = [
   { action: "suggest_change" as const, label: "Wijziging voorstellen", icon: "✎", cls: "act-suggest" },
 ];
 
-// Base column count (without route dates): Ingediend op, door, Klantnr., Naam, Postcode, Plaats, Opmerking, Toelichting, Status, Besluit op, Acties = 11
+// Base column count: Ingediend op, door, Klantnr., Naam, Postcode, Plaats, Opmerking, Toelichting, Status, Acties, Besluit op = 11
 // With route dates: +2 = 13
 const BASE_COLS = 11;
+
+const sessionKey = (type: CaseType) => `filter-active-${type}`;
+
+const readFilter = (type: CaseType): boolean => {
+  const stored = sessionStorage.getItem(sessionKey(type));
+  return stored === null ? true : stored === "true";
+};
 
 export const CaseTable = ({ type, items, userParty, userId, onUpdated }: Props) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editState, setEditState] = useState<EditState>({ clientNumber: "", fromDate: "", toDate: "", comment: "" });
   const [busy, setBusy] = useState(false);
+  const [activeOnly, setActiveOnly] = useState<boolean>(() => readFilter(type));
+
+  const toggleFilter = () => {
+    const next = !activeOnly;
+    setActiveOnly(next);
+    sessionStorage.setItem(sessionKey(type), String(next));
+  };
+
+  const visibleItems = activeOnly
+    ? items.filter(i => i.status === "Pending" || i.status === "Wijziging voorgesteld")
+    : items;
 
   const totalCols = type === "Routeafwijking" ? BASE_COLS + 2 : BASE_COLS;
 
@@ -127,7 +145,13 @@ export const CaseTable = ({ type, items, userParty, userId, onUpdated }: Props) 
 
   return (
     <div className="card">
-      <h3>{type}</h3>
+      <div className="card-header">
+        <h3>{type}</h3>
+        <label className="filter-toggle">
+          <input type="checkbox" checked={activeOnly} onChange={toggleFilter} />
+          Alleen actieve meldingen
+        </label>
+      </div>
       <div className="table-wrap">
         <table>
           <thead>
@@ -143,19 +167,19 @@ export const CaseTable = ({ type, items, userParty, userId, onUpdated }: Props) 
               <th>Opmerking</th>
               <th>Toelichting</th>
               <th>Status</th>
-              <th>Besluit op</th>
               <th>Acties</th>
+              <th>Besluit op</th>
             </tr>
           </thead>
           <tbody>
-            {items.length === 0 && (
+            {visibleItems.length === 0 && (
               <tr>
                 <td colSpan={totalCols} style={{ textAlign: "center", color: "#888" }}>
-                  Geen meldingen
+                  {activeOnly ? "Geen actieve meldingen" : "Geen meldingen"}
                 </td>
               </tr>
             )}
-            {items.map((item) => {
+            {visibleItems.map((item) => {
               const editing = editingId === item.id;
               return (
                 <tr key={item.id} className={editing ? "row-editing" : undefined}>
@@ -204,8 +228,6 @@ export const CaseTable = ({ type, items, userParty, userId, onUpdated }: Props) 
                     </span>
                   </td>
 
-                  <td className="nowrap">{fmtDateTime(item.decidedOn)}</td>
-
                   <td className="nowrap">
                     {editing ? (
                       <div className="actions">
@@ -237,6 +259,8 @@ export const CaseTable = ({ type, items, userParty, userId, onUpdated }: Props) 
                       </div>
                     )}
                   </td>
+
+                  <td className="nowrap">{fmtDateTime(item.decidedOn)}</td>
                 </tr>
               );
             })}
