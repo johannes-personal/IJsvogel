@@ -13,8 +13,7 @@ body {
 }
 
 .layout {
-  max-width: 1200px;
-  margin: 0 auto;
+  margin: 0 10%;
   padding: 1.25rem;
 }
 
@@ -182,6 +181,7 @@ th {
 
 @media (max-width: 900px) {
   .layout {
+    margin: 0 2%;
     padding: 0.7rem;
   }
 
