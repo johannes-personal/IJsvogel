@@ -1,11 +1,11 @@
-import type { CaseRecord, CaseType } from "../types/domain";
+import type { CaseRecord, CaseType, Party } from "../types/domain";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
 
 type Props = {
   type: CaseType;
   items: CaseRecord[];
-  canAct: boolean;
+  userParty: Party;
   userId: string;
   onUpdated: () => Promise<void>;
 };
@@ -27,7 +27,12 @@ const ACTION_BUTTONS = [
   { action: "suggest_change" as const, label: "Wijziging voorstellen", icon: "✎", cls: "act-suggest"  },
 ];
 
-export const CaseTable = ({ type, items, canAct, userId, onUpdated }: Props) => {
+export const CaseTable = ({ type, items, userParty, userId, onUpdated }: Props) => {
+  const canActOnItem = (item: CaseRecord) => {
+    if (userParty === "Anidis") return item.submittedBy === "NedCargo";
+    if (userParty === "NedCargo") return item.submittedBy === "Anidis";
+    return true; // IJsvogel can act on all
+  };
   const applyAction = async (id: string, action: "approve" | "reject" | "suggest_change") => {
     const comment = action === "approve" ? undefined : prompt("Geef een toelichting");
     const res = await fetch(`${API_BASE_URL}/cases/${id}/action`, {
@@ -86,7 +91,7 @@ export const CaseTable = ({ type, items, canAct, userId, onUpdated }: Props) => 
                 <td className="nowrap"><span className={`status-badge status-${item.status.toLowerCase().replace(/\s+/g, "-")}`}>{item.status}</span></td>
                 <td className="nowrap">{fmtDate(item.decidedOn)}</td>
                 <td className="nowrap">
-                  {canAct && item.status === "Pending" ? (
+                  {canActOnItem(item) && item.status === "Pending" ? (
                     <div className="actions">
                       {ACTION_BUTTONS.map(({ action, label, icon, cls }) => (
                         <button

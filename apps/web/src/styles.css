@@ -192,6 +192,58 @@ th {
   border-left: 3px solid var(--brand-orange);
 }
 
+/* Tab navigation */
+.tabs {
+  display: flex;
+  gap: 0;
+  margin: 1rem 0 0;
+  border-bottom: 2px solid var(--border);
+}
+
+.tab-btn {
+  margin-top: 0;
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-main);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.tab-btn:hover {
+  background: transparent;
+  color: var(--brand-orange);
+  border-bottom-color: var(--brand-orange);
+  filter: none;
+}
+
+.tab-btn.active {
+  color: var(--brand-orange);
+  border-bottom-color: var(--brand-orange);
+  background: transparent;
+}
+
+/* Full-width stacked forms */
+.forms-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  margin-top: 0.8rem;
+}
+
+.forms-stack .card {
+  width: 100%;
+}
+
+.forms-stack .form-grid {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
 @media (max-width: 900px) {
   .layout {
     margin: 0 2%;
